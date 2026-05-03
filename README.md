@@ -154,9 +154,11 @@ cd examples/cpp/display_button_demo
 idf.py set-target esp32s3
 idf.py build
 
-# Flash and open serial monitor (replace PORT with e.g. COM3 or /dev/ttyUSB0)
+# Flash (replace PORT with e.g. COM3 or /dev/ttyUSB0)
 idf.py -p PORT flash monitor
 ```
+
+> **Waveshare ESP32-S3 Mini note:** Auto-reset via RTS may not work. If flashing fails with "write timeout", enter bootloader manually: hold **BOOT**, press+release **RESET**, release **BOOT**, then run the flash command immediately. The device may re-enumerate on a different COM port in bootloader mode.
 
 ### Key files
 

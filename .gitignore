@@ -1,0 +1,16 @@
+# ESP-IDF build output
+build/
+sdkconfig
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor
+.vscode/
+.idea/
+
+# IDF component manager
+dependencies.lock
+managed_components/
