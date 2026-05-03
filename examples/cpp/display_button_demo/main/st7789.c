@@ -76,7 +76,10 @@ void st7789_draw_char(int x, int y, char c, uint16_t fg, uint16_t bg, int scale)
     const uint8_t *glyph = font8x8_basic[(int)(c - 0x20)];
 
     int w = 8 * scale, h = 8 * scale;
-    uint16_t buf[32 * 32];  /* 4x scale max → 32×32×2 = 2048 B on stack */
+    /* Heap DMA buffer — stack buffers risk cache coherency issues with SPI DMA. */
+    uint16_t *buf = heap_caps_malloc((size_t)w * h * sizeof(uint16_t),
+                                     MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+    if (!buf) return;
     uint16_t fg_be = swap16(fg), bg_be = swap16(bg);
 
     for (int row = 0; row < 8; row++) {
@@ -89,6 +92,7 @@ void st7789_draw_char(int x, int y, char c, uint16_t fg, uint16_t bg, int scale)
         }
     }
     esp_lcd_panel_draw_bitmap(s_panel, x, y, x + w, y + h, buf);
+    free(buf);
 }
 
 void st7789_draw_text(int x, int y, const char *s, uint16_t fg, uint16_t bg, int scale)
