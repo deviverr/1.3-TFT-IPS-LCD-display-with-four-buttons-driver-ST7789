@@ -8,6 +8,7 @@ ST7789_MADCTL  = const(0x36)
 ST7789_CASET   = const(0x2A)
 ST7789_RASET   = const(0x2B)
 ST7789_RAMWR   = const(0x2C)
+ST7789_INVON   = const(0x21)
 ST7789_DISPON  = const(0x29)
 
 BLACK = 0x0000
@@ -50,6 +51,8 @@ class ST7789:
         self.write_data(bytearray([0x55]))
 
         self.set_rotation(self.rotation)
+
+        self.write_cmd(ST7789_INVON)
 
         self.write_cmd(ST7789_DISPON)
         time.sleep_ms(100)
