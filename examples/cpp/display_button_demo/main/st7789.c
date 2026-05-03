@@ -73,25 +73,30 @@ void st7789_draw_char(int x, int y, char c, uint16_t fg, uint16_t bg, int scale)
     if (scale < 1) scale = 1;
     if (scale > 4) scale = 4;
     if (c < 0x20 || c > 0x7F) c = '?';
+    if (x < 0 || y < 0 || x + 8 * scale > ST7789_WIDTH || y + 8 * scale > ST7789_HEIGHT) return;
     const uint8_t *glyph = font8x8_basic[(int)(c - 0x20)];
 
-    int w = 8 * scale, h = 8 * scale;
-    /* Heap DMA buffer — stack buffers risk cache coherency issues with SPI DMA. */
-    uint16_t *buf = heap_caps_malloc((size_t)w * h * sizeof(uint16_t),
+    int row_w = 8 * scale;
+    /* One horizontal stripe per glyph row (row_w × scale pixels).
+     * Sending one large bitmap per character caused SPI DMA corruption
+     * at scale > 1 — smaller per-row transactions are reliable. */
+    uint16_t *buf = heap_caps_malloc((size_t)row_w * scale * sizeof(uint16_t),
                                      MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
     if (!buf) return;
-    uint16_t fg_be = swap16(fg), bg_be = swap16(bg);
 
     for (int row = 0; row < 8; row++) {
         uint8_t bits = glyph[row];
         for (int col = 0; col < 8; col++) {
-            uint16_t pix = (bits & (1 << col)) ? fg_be : bg_be;
+            uint16_t pix = swap16((bits & (1 << col)) ? fg : bg);
             for (int sy = 0; sy < scale; sy++)
                 for (int sx = 0; sx < scale; sx++)
-                    buf[(row * scale + sy) * w + col * scale + sx] = pix;
+                    buf[sy * row_w + col * scale + sx] = pix;
         }
+        esp_lcd_panel_draw_bitmap(s_panel,
+                                  x,              y + row * scale,
+                                  x + row_w,      y + row * scale + scale,
+                                  buf);
     }
-    esp_lcd_panel_draw_bitmap(s_panel, x, y, x + w, y + h, buf);
     free(buf);
 }
 

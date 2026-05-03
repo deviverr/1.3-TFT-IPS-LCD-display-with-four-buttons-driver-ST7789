@@ -256,6 +256,46 @@ if buttons[0].value() == 0:   # K1 pressed (active-low)
 
 ---
 
+## How it works
+
+### Display driver (C++)
+
+The C++ driver wraps ESP-IDF's `esp_lcd` SPI panel API. Init sequence:
+
+1. **Backlight** — GPIO 9 set HIGH before anything else
+2. **SPI bus** — `spi_bus_initialize(SPI2_HOST)` with SCLK=3, MOSI=4, DMA auto
+3. **Panel IO** — `esp_lcd_new_panel_io_spi()` with DC=8, CS=-1 (tied low on module), clock=10 MHz, **SPI mode 3**
+4. **ST7789 panel** — `esp_lcd_new_panel_st7789()` → reset → init → `invert_color(true)` → display on
+5. **Clear** — `fill_rect(0,0,240,240, BLACK)` fills screen black
+
+### Pixel rendering
+
+All drawing goes through two primitives:
+
+**`fill_rect(x, y, w, h, color)`** — fills a rectangle with one color. Stripes the area in 8-row chunks to keep the DMA buffer under ~3.8 KB. Each chunk is heap-allocated with `MALLOC_CAP_DMA` to guarantee SPI DMA access.
+
+**`draw_char(x, y, c, fg, bg, scale)`** — renders one 8×8 bitmap font glyph, scaled by 1–4×. Sends **one row-stripe at a time** (8 DMA transactions per character). Sending the whole glyph as a single large transaction caused SPI DMA corruption at scale > 1 on ESP32-S3 — smaller per-row transfers are reliable.
+
+**`draw_text` / `draw_text_centered`** call `draw_char` in sequence for each character.
+
+### Why `MALLOC_CAP_DMA` matters
+
+ESP32-S3 has a 16 KB write-back D-cache. Stack buffers get cached by the CPU — DMA reads from RAM and may see stale (pre-write) data. `heap_caps_malloc(MALLOC_CAP_DMA)` allocates in uncached or DMA-coherent memory, so what the CPU writes is what DMA reads.
+
+### Color inversion
+
+This module variant requires the ST7789 `INVON` command (0x21) during init. Without it, all colors appear as their RGB complement. Both drivers send this command — it is a hardware quirk of this specific PCB, not a software setting to toggle.
+
+### SPI mode 3
+
+ST7789 requires CPOL=1, CPHA=1 (mode 3). Mode 0 produces garbage pixels or no output. This is the single most common reason people can't get this display working.
+
+### Button reading
+
+All 4 buttons share a common GND through the module PCB. Each GPIO (10–13) uses the ESP32-S3 internal pull-up resistor. Pressing a button connects the GPIO to GND → reads 0. No external resistors needed.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
@@ -266,3 +306,4 @@ if buttons[0].value() == 0:   # K1 pressed (active-low)
 | Display ignores writes | CS not low | Module has CS grounded on PCB; set `cs_gpio_num = -1` in C++ |
 | Buttons always pressed | Pull-up missing | Enable `GPIO_PULLUP_ENABLE` (C++) or `Pin.PULL_UP` (MicroPython) |
 | White noise on screen | Incomplete init | Ensure hardware RST pulse + SW reset + SLPOUT in full sequence |
+| Large text corrupted / half-broken | SPI DMA transfer too large | C++ driver sends one row-stripe at a time (already fixed); do not use a single `draw_bitmap` for the whole glyph |
