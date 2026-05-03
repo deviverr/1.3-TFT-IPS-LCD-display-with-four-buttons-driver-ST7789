@@ -16,6 +16,8 @@ Created because getting this display running on ESP32 can be tricky — SPI mode
 | MCU | ESP32-S3 Mini (Waveshare) |
 | Buttons | 4× tactile (K1–K4, active-low via internal pull-up) |
 
+> **Color inversion note:** This module variant requires the ST7789 color inversion command (`INVON`, `0x21`) to be sent during init. Without it every color renders as its RGB complement — red becomes cyan, green becomes magenta, white becomes black, etc. Both examples already handle this. If you port the driver yourself, make sure to include it.
+
 ---
 
 ## Pinout
@@ -259,7 +261,7 @@ if buttons[0].value() == 0:   # K1 pressed (active-low)
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | Screen stays black | BLK not driven HIGH | Check GPIO 9 → BLK wire; verify backlight code runs |
-| Inverted colors | Color inversion off | Try `esp_lcd_panel_invert_color(panel, true)` in C++ |
+| Inverted colors (red↔cyan, green↔magenta, etc.) | Module needs INVON | Already fixed in both examples. If porting: add `INVON (0x21)` to init (MicroPython) or `invert_color(true)` (C++) |
 | Garbled / shifted pixels | Wrong SPI mode | Must use **mode 3** — `polarity=1, phase=1` |
 | Display ignores writes | CS not low | Module has CS grounded on PCB; set `cs_gpio_num = -1` in C++ |
 | Buttons always pressed | Pull-up missing | Enable `GPIO_PULLUP_ENABLE` (C++) or `Pin.PULL_UP` (MicroPython) |
