@@ -165,7 +165,7 @@ esp_err_t st7789_init(void)
 
     ESP_ERROR_CHECK(esp_lcd_panel_reset(s_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(s_panel));
-    ESP_ERROR_CHECK(esp_lcd_panel_invert_color(s_panel, false));
+    ESP_ERROR_CHECK(esp_lcd_panel_invert_color(s_panel, true));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(s_panel, true));
 
     st7789_fill(ST7789_BLACK);
