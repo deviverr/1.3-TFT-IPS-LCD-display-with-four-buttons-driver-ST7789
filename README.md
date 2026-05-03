@@ -15,7 +15,6 @@ Created because getting this display running on ESP32 can be tricky — SPI mode
 | Interface | SPI (mode 3: CPOL=1, CPHA=1) |
 | MCU | ESP32-S3 Mini (Waveshare) |
 | Buttons | 4× tactile (K1–K4, active-low via internal pull-up) |
-| NFC (optional) | PN532 via I2C |
 
 ---
 
@@ -41,15 +40,6 @@ Created because getting this display running on ESP32 can be tricky — SPI mode
 | K2 | GPIO 12 | DOWN | LOW (internal pull-up) |
 | K3 | GPIO 11 | SELECT | LOW (internal pull-up) |
 | K4 | GPIO 10 | BACK | LOW (internal pull-up) |
-
-### PN532 NFC (optional) → ESP32-S3 Mini
-
-| PN532 Pin | ESP32-S3 GPIO |
-|-----------|---------------|
-| VCC | 3.3V |
-| GND | GND |
-| SCL | GPIO 6 |
-| SDA | GPIO 5 |
 
 ---
 
